@@ -85,3 +85,9 @@ target/
 lib/pycocotools/_mask.c
 lib/nms/cpu_nms.c
 
+*.pth
+*.bin
+
+*.png
+*.jpg
+*.jpeg

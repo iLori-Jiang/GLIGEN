@@ -341,6 +341,9 @@ def prepare_batch_sem(meta, batch=1):
 
 @torch.no_grad()
 def run(meta, args, starting_noise=None):
+    print("")
+    print("-"*10 + "Start this run" + "-"*10)
+    print("")
 
     # - - - - - prepare models - - - - - # 
     model, autoencoder, text_encoder, diffusion, config = load_ckpt(meta["ckpt"])
@@ -349,9 +352,20 @@ def run(meta, args, starting_noise=None):
     model.grounding_tokenizer_input = grounding_tokenizer_input
     
     grounding_downsampler_input = None
+    # JHY: NOTE
     if "grounding_downsampler_input" in config:
         grounding_downsampler_input = instantiate_from_config(config['grounding_downsampler_input'])
 
+    print("")
+    print("config:")
+    print(config)
+    print("")
+    # print("grounding_tokenizer_input:")
+    # print(grounding_tokenizer_input)
+    # print("")
+    # print("grounding_downsampler_input:")
+    # print(grounding_downsampler_input)
+    # print("")
 
 
     # - - - - - update config from args - - - - - # 
@@ -360,6 +374,8 @@ def run(meta, args, starting_noise=None):
 
 
     # - - - - - prepare batch - - - - - #
+
+    # prepare the batches to load the images, but hasn't encode them
     if "keypoint" in meta["ckpt"]:
         batch = prepare_batch_kp(meta, config.batch_size)
     elif "hed" in meta["ckpt"]:
@@ -374,21 +390,37 @@ def run(meta, args, starting_noise=None):
         batch = prepare_batch_sem(meta, config.batch_size)
     else:
         batch = prepare_batch(meta, config.batch_size)
-    context = text_encoder.encode(  [meta["prompt"]]*config.batch_size  )
-    uc = text_encoder.encode( config.batch_size*[""] )
-    if args.negative_prompt is not None:
-        uc = text_encoder.encode( config.batch_size*[args.negative_prompt] )
 
+
+    context = text_encoder.encode(  [meta["prompt"]]*config.batch_size  )
+    print("meta[\"prompt\"] " + meta["prompt"])
+
+    uc = text_encoder.encode( config.batch_size*[""] )
+    if meta["negative_prompt"] is not None:
+        uc = text_encoder.encode( config.batch_size*[meta["negative_prompt"]] )
+    print("meta[\"negative_prompt\"] " + meta["negative_prompt"])
+    # if args.negative_prompt is not None:
+    #     uc = text_encoder.encode( config.batch_size*[args.negative_prompt] )
+    # print("args.negative_prompt " + args.negative_prompt)
+    print("")
 
     # - - - - - sampler - - - - - # 
+
+    print("")
+
+    # just register the sampler with diffusion schedule and UNet model
     alpha_generator_func = partial(alpha_generator, type=meta.get("alpha_type"))
     if config.no_plms:
+        print("--Sampler: DDIM")
         sampler = DDIMSampler(diffusion, model, alpha_generator_func=alpha_generator_func, set_alpha_scale=set_alpha_scale)
         steps = 250 
     else:
+        # defualt sampler
+        print("--Sampler: PLMS")
         sampler = PLMSSampler(diffusion, model, alpha_generator_func=alpha_generator_func, set_alpha_scale=set_alpha_scale)
         steps = 50 
 
+    print("")
 
     # - - - - - inpainting related - - - - - #
     inpainting_mask = z0 = None  # used for replacing known region in diffusion process
@@ -408,11 +440,42 @@ def run(meta, args, starting_noise=None):
     
 
     # - - - - - input for gligen - - - - - #
+
+    # encode / tokenize the grounding signal
     grounding_input = grounding_tokenizer_input.prepare(batch)
     grounding_extra_input = None
     if grounding_downsampler_input != None:
         grounding_extra_input = grounding_downsampler_input.prepare(batch)
 
+
+    def print_tensor_info(data, prefix=""):
+        if isinstance(data, dict):
+            for key, value in data.items():
+                print_tensor_info(value, prefix + key + ".")
+        elif isinstance(data, list):
+            for i, item in enumerate(data):
+                print_tensor_info(item, prefix + f"[{i}].")
+        elif isinstance(data, torch.Tensor):
+            print(f"{prefix}shape: {data.shape}")
+        else:
+            print(f"{prefix}{data}")
+    # print("")
+    # print("grounding_input:")
+    # print_tensor_info(grounding_input)
+    # print("grounding_extra_input:")
+    # print_tensor_info(grounding_extra_input)
+    # print("")
+
+    '''
+    grounding_input:
+    hed_edge.shape: torch.Size([4, 3, 512, 512])
+    mask.shape: torch.Size([4, 1])
+    grounding_extra_input: first_conv -> same size as the latent
+    shape: torch.Size([4, 3, 512, 512])
+    '''
+
+
+    # pack everything into the dict
     input = dict(
                 x = starting_noise, 
                 timesteps = None, 
@@ -425,11 +488,18 @@ def run(meta, args, starting_noise=None):
 
 
     # - - - - - start sampling - - - - - #
+    print("")
+    print("!! Start Sampling !!")
+
     shape = (config.batch_size, model.in_channels, model.image_size, model.image_size)
 
     samples_fake = sampler.sample(S=steps, shape=shape, input=input,  uc=uc, guidance_scale=config.guidance_scale, mask=inpainting_mask, x0=z0)
+
+    print("!! End Sampling !!")
+
     samples_fake = autoencoder.decode(samples_fake)
 
+    print("!! End Decoding !!")
 
     # - - - - - save - - - - - #
     output_folder = os.path.join( args.folder,  meta["save_folder_name"])
@@ -467,15 +537,15 @@ if __name__ == "__main__":
     meta_list = [ 
 
         # - - - - - - - - GLIGEN on text grounding for generation - - - - - - - - # 
-        dict(
-            # ckpt = "../gligen_checkpoints/checkpoint_generation_text.pth",
-            ckpt = "./gligen_checkpoints/checkpoint_generation_text.bin",
-            prompt = "a Ferrari sports car is next to a dinosaur",
-            phrases = ['a Ferrari sports car', 'a dinosaur'],
-            locations = [ [0.0,0.09,0.33,0.76], [0.55,0.11,1.0,0.8] ],
-            alpha_type = [0.3, 0.0, 0.7],
-            save_folder_name="generation_box_text"
-        ), 
+        # dict(
+        #     # ckpt = "../gligen_checkpoints/checkpoint_generation_text.pth",
+        #     ckpt = "./gligen_checkpoints/checkpoint_generation_text.bin",
+        #     prompt = "a dog is next to a dinosaur",
+        #     phrases = ['a dog', 'a dinosaur'],
+        #     locations = [ [0.0,0.09,0.33,0.76], [0.55,0.11,1.0,0.8] ],
+        #     alpha_type = [0.3, 0.0, 0.7],
+        #     save_folder_name="generation_box_text"
+        # ), 
 
 
         # - - - - - - - - GLIGEN on text grounding for inpainting - - - - - - - - # 
@@ -529,13 +599,16 @@ if __name__ == "__main__":
 
 
         # - - - - - - - - GLIGEN on hed grounding for generation - - - - - - - - # 
-        # dict(
-        #     ckpt ="../gligen_checkpoints/checkpoint_generation_hed.pth",
-        #     prompt = "a man is eating breakfast",  
-        #     hed_image = 'inference_images/hed_man_eat.png',
-        #     save_folder_name="hed",
-        #     alpha_type = [0.9, 0, 0.1], 
-        # ),
+        dict(
+            # ckpt ="../gligen_checkpoints/checkpoint_generation_hed.pth",
+            ckpt ="./gligen_checkpoints/checkpoint_generation_hed.bin",
+            prompt = "a man is eating breakfast",  
+            negative_prompt = args.negative_prompt + "",
+            # negative_prompt = ", no RGB colorful image",
+            hed_image = 'inference_images/hed_man_eat.png',
+            save_folder_name="hed",
+            alpha_type = [0.9, 0, 0.1], 
+        ),
 
 
 

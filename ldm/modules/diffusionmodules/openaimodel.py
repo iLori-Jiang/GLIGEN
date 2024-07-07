@@ -438,6 +438,8 @@ class UNetModel(nn.Module):
 
         # input tensor  
         h = input["x"]
+        # JHY: NOTE
+        # Attach the first conv to the original input
         if self.downsample_net != None and self.first_conv_type=="GLIGEN":
             temp  = self.downsample_net(input["grounding_extra_input"])
             h = th.cat( [h,temp], dim=1 )

@@ -1,0 +1,105 @@
+{
+    # to control the dynamics of the diffusion process
+    'diffusion': {
+        'target': 'ldm.models.diffusion.ldm.LatentDiffusion',
+        'params': {
+            'linear_start': 0.00085,
+            'linear_end': 0.012,
+            'timesteps': 1000
+        }
+    },
+    # the UNet model of the diffusion model, main model
+    'model': {
+        'target': 'ldm.modules.diffusionmodules.openaimodel.UNetModel',
+        'params': {
+            'image_size': 64,
+            'in_channels': 4,
+            'out_channels': 4,
+            'model_channels': 320,
+            'attention_resolutions': [4, 2, 1],
+            'num_res_blocks': 2,
+            'channel_mult': [1, 2, 4, 4],
+            'num_heads': 8,
+            'transformer_depth': 1,
+            'context_dim': 768,
+            'fuser_type': 'gatedSA',
+            'use_checkpoint': True,
+            'grounding_downsampler': {
+                'target': 'ldm.modules.diffusionmodules.hed_grounding_downsampler.GroundingDownsampler',
+                'params': {
+                    'out_dim': 1
+                }
+            },
+            'grounding_tokenizer': {
+                'target': 'ldm.modules.diffusionmodules.hed_grounding_net.PositionNet',
+                'params': {
+                    'resize_input': 256,
+                    'out_dim': 768
+                }
+            }
+        }
+    },
+    # to decode the latent into the original image
+    'autoencoder': {
+        'target': 'ldm.models.autoencoder.AutoencoderKL',
+        'params': {
+            'scale_factor': 0.18215,
+            'embed_dim': 4,
+            'ddconfig': {
+                'double_z': True,
+                'z_channels': 4,
+                'resolution': 256,
+                'in_channels': 3,
+                'out_ch': 3,
+                'ch': 128,
+                'ch_mult': [1, 2, 4, 4],
+                'num_res_blocks': 2,
+                'attn_resolutions': [],
+                'dropout': 0.0
+            }
+        }
+    },
+    # to encode the text prompt
+    'text_encoder': {
+        'target': 'ldm.modules.encoders.modules.FrozenCLIPEmbedder'
+    },
+    'train_dataset_names': {
+        'CC3MGroundingHed': {
+            'prob_use_caption': 1,
+            'image_size': 512,
+            'random_flip': True
+        }
+    },
+    # w.r.t hed_grounding_tokinzer_input
+    'grounding_tokenizer_input': {
+        'target': 'grounding_input.hed_grounding_tokinzer_input.GroundingNetInput'
+    },
+    # w.r.t hed_grounding_downsampler_input
+    'grounding_downsampler_input': {
+        'target': 'grounding_input.hed_grounding_downsampler_input.GroundingDSInput'
+    },
+    'DATA_ROOT': './DATA',
+    'OUTPUT_ROOT': '/mnt/output/fine_tune_ldm/hed/cc3m',
+    'name': 'hed-convnext',
+    'seed': 123,
+    'local_rank': 0,
+    'yaml_file': 'configs/cc3m.yaml',
+    'base_learning_rate': 5e-05,
+    'weight_decay': 0.0,
+    'warmup_steps': 10000,
+    'scheduler_type': 'constant',
+    'batch_size': 2,
+    'workers': 1,
+    'official_ckpt_name': 'sd-v1-4.ckpt',
+    'ckpt': None,
+    'inpaint_mode': False,
+    'randomize_fg_mask': False,
+    'random_add_bg_mask': False,
+    'enable_ema': False,
+    'ema_rate': 0.9999,
+    'total_iters': 500000,
+    'save_every_iters': 5000,
+    'disable_inference_in_training': False,
+    'distributed': True,
+    'total_batch_size': 32
+}

@@ -1,7 +1,7 @@
 import os 
 import torch as th 
 
-
+# JHY: NOTE: take a raw batch from the dataloader to prepare the input for position_net and downsample_net
 
 class GroundingNetInput:
     def __init__(self):

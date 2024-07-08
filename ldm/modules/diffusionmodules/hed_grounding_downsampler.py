@@ -14,7 +14,7 @@ class GroundingDownsampler(nn.Module):
 
     def forward(self, grounding_extra_input):
         
-        # JHY: NOTE
+        # JHY: NOTE: HED grounding
 
         # print("")
         # print("GroundingDownsampler: BEFORE: grounding_extra_input.shape: ")

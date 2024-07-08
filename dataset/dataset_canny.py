@@ -14,6 +14,9 @@ import base64
 import numpy as np
 
 
+# JHY: NOTE: prepare the dataset for canny condition
+
+
 def decode_base64_to_pillow(image_b64):
     return Image.open(BytesIO(base64.b64decode(image_b64))).convert('RGB')
 

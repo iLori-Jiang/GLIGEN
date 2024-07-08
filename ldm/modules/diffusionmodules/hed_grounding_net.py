@@ -7,7 +7,7 @@ from ..attention import SelfAttention, FeedForward
 from .convnext import convnext_tiny
 
 
-
+# JHY: NOTE: the model to process the grounding information
 
 class PositionNet(nn.Module):
     def __init__(self, resize_input=448, out_dim=768):

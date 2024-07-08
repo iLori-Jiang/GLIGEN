@@ -3,6 +3,14 @@ import os
 class DatasetCatalog:
     def __init__(self, ROOT):
 
+        # JHY: NOTE: add toy dataset
+        self.ToyGroundingCanny = {
+            "target": "dataset.toy_dataset.ToyDataset",
+            "train_params":dict(
+                
+            ),
+        }
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 

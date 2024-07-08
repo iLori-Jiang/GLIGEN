@@ -1,4 +1,7 @@
 """
+
+# JHY: NOTE
+
 This is a high-level pseudo code for grounding net. 
 
 This class needs to tokenize grounding input into gronding tokens which 

@@ -27,7 +27,8 @@ if __name__ == "__main__":
     parser.add_argument("--weight_decay", type=float,  default=0.0, help="")
     parser.add_argument("--warmup_steps", type=int,  default=10000, help="")
     parser.add_argument("--scheduler_type", type=str,  default='constant', help="cosine or constant")
-    parser.add_argument("--batch_size", type=int,  default=2, help="")
+    parser.add_argument("--batch_size", type=int,  default=4, help="")
+    parser.add_argument("--accumulate_grad_batches", type=int,  default=4, help="")
     parser.add_argument("--workers", type=int,  default=1, help="")
     parser.add_argument("--official_ckpt_name", type=str,  default="sd-v1-4.ckpt", help="SD ckpt name and it is expected in DATA_ROOT, thus DATA_ROOT/official_ckpt_name must exists")
     parser.add_argument("--ckpt", type=lambda x:x if type(x) == str and x.lower() != "none" else None,  default=None, 
@@ -65,7 +66,9 @@ if __name__ == "__main__":
 
     config = OmegaConf.load(args.yaml_file) 
     config.update( vars(args) )
+
     config.total_batch_size = config.batch_size * n_gpu
+
     if args.inpaint_mode:
         config.model.params.inpaint_mode = True
 
@@ -75,6 +78,9 @@ if __name__ == "__main__":
     trainer.start_training()
 
     # CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 main.py  --yaml_file=configs/ade_sem.yaml  --DATA_ROOT=../../DATA   --batch_size=4
+
+    # JHY: NOTE: just use the 0 GPU
+    # CUDA_VISIBLE_DEVICES=0 python main.py --name=gligen_toy_data --yaml_file=configs/toy_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=500 --disable_inference_in_training=False
 
 
 

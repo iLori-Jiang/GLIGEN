@@ -25,6 +25,10 @@ try:
     from apex import amp
 except:
     pass  
+
+import wandb
+import json
+
 # = = = = = = = = = = = = = = = = = = useful functions = = = = = = = = = = = = = = = = = #
 
 
@@ -115,7 +119,10 @@ def count_params(params):
     total_trainable_params_count = 0 
     for p in params:
         total_trainable_params_count += p.numel()
+    
+    print("")
     print("total_trainable_params_count is: ", total_trainable_params_count)
+    print("")
 
 
 def update_ema(target_params, source_params, rate=0.99):
@@ -165,6 +172,21 @@ def create_expt_folder_with_auto_resuming(OUTPUT_ROOT, name):
 
 class Trainer:
     def __init__(self, config):
+
+        def json_friendly_config(config):
+            # 过滤或转换 config 中无法序列化的项
+            friendly_config = {}
+            for key, value in config.items():
+                try:
+                    json.dumps({key: value})  # 尝试将项转换为 JSON
+                    friendly_config[key] = value
+                except (TypeError, ValueError):
+                    friendly_config[key] = str(value)  # 将无法序列化的项转换为字符串
+            return friendly_config
+
+        wandb.init(project=config.name, config=json_friendly_config(config))
+    
+        # ===================================================
 
         self.config = config
         self.device = torch.device("cuda")
@@ -241,10 +263,16 @@ class Trainer:
                 assert name in original_params_names, name 
             all_params_name.append(name) 
 
+        self.trainable_params_names = trainable_names
 
         self.opt = torch.optim.AdamW(params, lr=config.base_learning_rate, weight_decay=config.weight_decay) 
-        count_params(params)
         
+        print("")
+        print("count_params")
+        count_params(params)
+        print("")
+
+        self.accumulate_grad_batches = config.accumulate_grad_batches if hasattr(config, 'accumulate_grad_batches') else 1
         
 
 
@@ -283,7 +311,9 @@ class Trainer:
 
         if get_rank() == 0:
             total_image = dataset_train.total_images()
+            print("")
             print("Total training images: ", total_image)     
+            print("")
         
 
 
@@ -365,6 +395,7 @@ class Trainer:
         model_output = self.model(input)
         
         loss = torch.nn.functional.mse_loss(model_output, noise) * self.l_simple_weight
+        loss = loss / self.accumulate_grad_batches
 
         self.loss_dict = {"loss": loss.item()}
 
@@ -376,24 +407,53 @@ class Trainer:
 
         iterator = tqdm(range(self.starting_iter, self.config.total_iters), desc='Training progress',  disable=get_rank() != 0 )
         self.model.train()
+
+        accumulate_step = 0
+
         for iter_idx in iterator: # note: iter_idx is not from 0 if resume training
             self.iter_idx = iter_idx
 
-            self.opt.zero_grad()
+            if accumulate_step % self.accumulate_grad_batches == 0:
+                self.opt.zero_grad()
+
             batch = next(self.loader_train)
             batch_to_device(batch, self.device)
 
             loss = self.run_one_step(batch)
             loss.backward()
-            self.opt.step() 
-            self.scheduler.step()
-            if self.config.enable_ema:
-                update_ema(self.ema_params, self.master_params, self.config.ema_rate)
 
+            accumulate_step += 1
+
+            if accumulate_step % self.accumulate_grad_batches == 0:
+                self.opt.step() 
+                self.scheduler.step()
+
+                if self.config.enable_ema:
+                    update_ema(self.ema_params, self.master_params, self.config.ema_rate)
+
+                # the range of the gradient
+                grad_norm = sum(param.grad.data.norm(2).item() ** 2 for name, param in self.model.named_parameters() if param.grad is not None and name in self.trainable_params_names) ** 0.5
+                wandb.log({"grad_norm": grad_norm}, step=iter_idx)
+
+                self.opt.zero_grad()
+                
 
             if (get_rank() == 0):
+                wandb.log(self.loss_dict, step=iter_idx)
+
                 if (iter_idx % 10 == 0):
                     self.log_loss() 
+
+                    # log learning rate
+                    lr_temp = self.scheduler.get_last_lr()[0]
+                    wandb.log({"learning_rate": lr_temp}, step=iter_idx)
+
+                    # log trainable parameters
+                    # for name, param in self.model.named_parameters():
+                    #     if param.requires_grad and name in self.trainable_params_names:
+                    #         wandb.log({f"{name}_mean": param.data.mean().item(), f"{name}_std": param.data.std().item()}, step=iter_idx)
+
+
                 if (iter_idx == 0)  or  ( iter_idx % self.config.save_every_iters == 0 )  or  (iter_idx == self.config.total_iters-1):
                     self.save_ckpt_and_result()
             synchronize()

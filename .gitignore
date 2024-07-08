@@ -91,3 +91,7 @@ lib/nms/cpu_nms.c
 *.png
 *.jpg
 *.jpeg
+
+OUTPUT
+wandb
+*ckpt

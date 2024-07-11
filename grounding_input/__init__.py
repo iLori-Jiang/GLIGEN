@@ -1,6 +1,6 @@
 """
 
-# JHY: NOTE
+# JHY: NOTE: reference
 
 Please write your own class for processing batch from dataloader. On the high-level,
 this class needs to handle data needed by Grounding Tokenizer. 

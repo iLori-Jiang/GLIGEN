@@ -1,6 +1,6 @@
 """
 
-# JHY: NOTE
+# JHY: NOTE: reference
 
 This is a high-level pseudo code for grounding net. 
 

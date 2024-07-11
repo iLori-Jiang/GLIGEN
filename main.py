@@ -80,7 +80,12 @@ if __name__ == "__main__":
     # CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 main.py  --yaml_file=configs/ade_sem.yaml  --DATA_ROOT=../../DATA   --batch_size=4
 
     # JHY: NOTE: just use the 0 GPU
+
+    # toy dataset using canny grounding approach
     # CUDA_VISIBLE_DEVICES=0 python main.py --name=gligen_toy_data --yaml_file=configs/toy_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=1000 --disable_inference_in_training=False
+
+    # ULIP plan dataset using canny grounding approach
+    # CUDA_VISIBLE_DEVICES=0 python main.py --name=ulip_plane_canny --yaml_file=configs/ULIP_plane_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=1000 --warmup_steps=1000 --disable_inference_in_training=False
 
 
 

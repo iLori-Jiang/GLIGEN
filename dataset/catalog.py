@@ -11,6 +11,14 @@ class DatasetCatalog:
             ),
         }
 
+        # JHY: NOTE: add ULIP plane dataset
+        self.ULIP2Plane = {
+            "target": "dataset.ULIP_plane.ULIP_plane",
+            "train_params":dict(
+                
+            ),
+        }
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 

@@ -376,17 +376,17 @@ def run(meta, args, starting_noise=None):
     # - - - - - prepare batch - - - - - #
 
     # prepare the batches to load the images, but hasn't encode them
-    if "keypoint" in meta["ckpt"]:
+    if "keypoint" in meta["type"]:
         batch = prepare_batch_kp(meta, config.batch_size)
-    elif "hed" in meta["ckpt"]:
+    elif "hed" in meta["type"]:
         batch = prepare_batch_hed(meta, config.batch_size)
-    elif "canny" in meta["ckpt"]:
+    elif "canny" in meta["type"]:
         batch = prepare_batch_canny(meta, config.batch_size)
-    elif "depth" in meta["ckpt"]:
+    elif "depth" in meta["type"]:
         batch = prepare_batch_depth(meta, config.batch_size)
-    elif "normal" in meta["ckpt"]:
+    elif "normal" in meta["type"]:
         batch = prepare_batch_normal(meta, config.batch_size)
-    elif "sem" in meta["ckpt"]:
+    elif "sem" in meta["type"]:
         batch = prepare_batch_sem(meta, config.batch_size)
     else:
         batch = prepare_batch(meta, config.batch_size)
@@ -540,7 +540,9 @@ if __name__ == "__main__":
         # dict(
         #     # ckpt = "../gligen_checkpoints/checkpoint_generation_text.pth",
         #     ckpt = "./gligen_checkpoints/checkpoint_generation_text.bin",
+        #     type = "",
         #     prompt = "a dog is next to a dinosaur",
+        #     negative_prompt = args.negative_prompt + "",
         #     phrases = ['a dog', 'a dinosaur'],
         #     locations = [ [0.0,0.09,0.33,0.76], [0.55,0.11,1.0,0.8] ],
         #     alpha_type = [0.3, 0.0, 0.7],
@@ -551,8 +553,10 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on text grounding for inpainting - - - - - - - - # 
         # dict(
         #     ckpt = "../gligen_checkpoints/checkpoint_inpainting_text.pth",
+        #     type = "",
         #     input_image = "inference_images/dalle2_museum.jpg",
         #     prompt = "a corgi and a cake",
+        #     negative_prompt = args.negative_prompt + "",
         #     phrases =   ['corgi', 'cake'],
         #     locations = [ [0.25, 0.28, 0.42, 0.52], [0.14, 0.58, 0.58, 0.92], ], # mask will be derived from box 
         #     save_folder_name="inpainting_box_text"
@@ -562,7 +566,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on image grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt = "../gligen_checkpoints/checkpoint_generation_text_image.pth",
+        #     type = "",
         #     prompt = "an alarm clock sitting on the beach",
+        #     negative_prompt = args.negative_prompt + "",
         #     images = ['inference_images/clock.png'],
         #     phrases = ['alarm clock'],
         #     locations = [ [0.0,0.09,0.53,0.76] ],
@@ -575,7 +581,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on text and style grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt = "../gligen_checkpoints/checkpoint_generation_text_image.pth",
+        #     type = "",
         #     prompt = "a brick house in the woods, anime, oil painting",
+        #     negative_prompt = args.negative_prompt + "",
         #     phrases =   ['a brick house',            'placehoder'],
         #     images =    ['inference_images/placeholder.png', 'inference_images/style_golden.jpg'],
         #     locations = [ [0.4,0.2,1.0,0.8],         [0.0, 1.0, 0.0, 1.0] ],
@@ -589,8 +597,10 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on image grounding for inpainting - - - - - - - - # 
         # dict(
         #     ckpt = "../gligen_checkpoints/checkpoint_inpainting_text_image.pth",
+        #     type = "",
         #     input_image = "inference_images/beach.jpg",
         #     prompt = "a bigben on the beach",
+        #     negative_prompt = args.negative_prompt + "",
         #     images = [ 'inference_images/bigben.jpg'],
         #     locations = [ [0.18, 0.08, 0.62, 0.75] ], # mask will be derived from box 
         #     save_folder_name="inpainting_box_image"
@@ -599,16 +609,17 @@ if __name__ == "__main__":
 
 
         # - - - - - - - - GLIGEN on hed grounding for generation - - - - - - - - # 
-        dict(
-            # ckpt ="../gligen_checkpoints/checkpoint_generation_hed.pth",
-            ckpt ="./gligen_checkpoints/checkpoint_generation_hed.bin",
-            prompt = "a man is eating breakfast",  
-            negative_prompt = args.negative_prompt + "",
-            # negative_prompt = ", no RGB colorful image",
-            hed_image = 'inference_images/hed_man_eat.png',
-            save_folder_name="hed",
-            alpha_type = [0.9, 0, 0.1], 
-        ),
+        # dict(
+        #     # ckpt ="../gligen_checkpoints/checkpoint_generation_hed.pth",
+        #     type = "hed",
+        #     ckpt ="./gligen_checkpoints/checkpoint_generation_hed.bin",
+        #     prompt = "a man is eating breakfast",  
+        #     negative_prompt = args.negative_prompt + "",
+        #     # negative_prompt = ", no RGB colorful image",
+        #     hed_image = 'inference_images/hed_man_eat.png',
+        #     save_folder_name="hed",
+        #     alpha_type = [0.9, 0, 0.1], 
+        # ),
 
 
 
@@ -616,7 +627,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on canny grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt ="../gligen_checkpoints/checkpoint_generation_canny.pth",
+        #     type = "canny",
         #     prompt = "A Humanoid Robot Designed for Companionship", 
+        #     negative_prompt = args.negative_prompt + "",
         #     canny_image = 'inference_images/canny_robot.png',
         #     alpha_type = [0.9, 0, 0.1], 
         #     save_folder_name="canny"
@@ -628,7 +641,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on normal grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt ="../gligen_checkpoints/checkpoint_generation_normal.pth",
-        #     prompt = "a large tree with no leaves in front of a building", # 
+        #     type = "normal",
+        #     prompt = "a large tree with no leaves in front of a building",
+        #     negative_prompt = args.negative_prompt + "",
         #     normal = 'inference_images/normal_tree_building.jpg', # a normal map 
         #     alpha_type = [0.7, 0, 0.3], 
         #     save_folder_name="normal",
@@ -638,7 +653,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on depth grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt ="../gligen_checkpoints/checkpoint_generation_depth.pth",
-        #     prompt = "a Vibrant colorful Bird Sitting on Tree Branch", # 
+        #     type = "depth",
+        #     prompt = "a Vibrant colorful Bird Sitting on Tree Branch",
+        #     negative_prompt = args.negative_prompt + "",
         #     depth = 'inference_images/depth_bird.png', 
         #     alpha_type = [0.7, 0, 0.3], 
         #     save_folder_name="depth"
@@ -648,7 +665,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on sem grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt ="../gligen_checkpoints/checkpoint_generation_sem.pth",
-        #     prompt = "a living room filled with lots of furniture and plants", # 
+        #     type = "sem",
+        #     prompt = "a living room filled with lots of furniture and plants",
+        #     negative_prompt = args.negative_prompt + "",
         #     sem = 'inference_images/sem_ade_living_room.png', # ADE raw annotation  
         #     alpha_type = [0.7, 0, 0.3], 
         #     save_folder_name="sem"
@@ -659,7 +678,9 @@ if __name__ == "__main__":
         # - - - - - - - - GLIGEN on keypoint grounding for generation - - - - - - - - # 
         # dict(
         #     ckpt = "../gligen_checkpoints/checkpoint_generation_keypoint.pth",
+        #     type = "keypoint",
         #     prompt = "A young man and a small boy are talking",
+        #     negative_prompt = args.negative_prompt + "",
         #     locations = [  
         #                     [
         #                         [0.7598, 0.2542],
@@ -707,6 +728,18 @@ if __name__ == "__main__":
         # ),
 
 
+        # - - - - - - - - GLIGEN on toy dataset for generation - - - - - - - - #
+        dict(
+            ckpt ="./OUTPUT/gligen_toy_data/tag01/checkpoint_latest.pth",
+            type = "canny",
+            # canny_image = 'inference_images/canny_robot.png',
+            # prompt = "A humanoid robot in red designed for companionship, in a yellow background",
+            canny_image = 'inference_images/toy_8.png',
+            prompt = "yellow circle on a green background",
+            negative_prompt = args.negative_prompt + "", 
+            alpha_type = [0.9, 0, 0.1], 
+            save_folder_name="toy_data"
+        ),
 
     ]
 

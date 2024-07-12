@@ -54,12 +54,12 @@ class ULIP_plane(Dataset):
     
 
     def total_images(self):
-        return len(self.pointcloud_filename_list)
+        return len(self)
     
 
     def process_index(self, index=None, show_images=False):
         if index is None:
-            index = np.random.randint(self.total_images())
+            index = np.random.randint(len(self))
             
         name = self.pointcloud_filename_list[index]
 
@@ -151,6 +151,7 @@ class ULIP_plane(Dataset):
             
             retry += 1
 
+
         if not index_source or not index_target:
             # not valid data pair found, return empty template
             return {
@@ -216,6 +217,7 @@ class ULIP_plane(Dataset):
 if __name__ == "__main__":
     dataset = ULIP_plane()
     print(len(dataset))
+    print(dataset.total_images())
 
     item = dataset[34]
     print(item['caption'])

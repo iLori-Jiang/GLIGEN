@@ -1,5 +1,4 @@
 import json
-import cv2
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -27,8 +26,8 @@ def create_image_grid(images):
     return grid_img
 
 
-class ULIP_plane(Dataset):
-    def __init__(self, dataset_path=DATASET_ADDRESS, sample_angle_range=60, image_size=512, random_flip=False, prob_use_caption=1):
+class ULIP_ShapeNet(Dataset):
+    def __init__(self, dataset_path=DATASET_ADDRESS, keyword=None, grounding_type=None, sample_angle_range=60, image_size=512, random_flip=False, prob_use_caption=1):
         self.dataset_path = dataset_path
 
         self.path_caption_data = os.path.join(dataset_path, 'captions')
@@ -38,15 +37,34 @@ class ULIP_plane(Dataset):
         self.all_angles = np.arange(0, 360, 12)
         self.sample_angle_range = sample_angle_range
 
-        self.keyword = "plane"
-        json_file = os.path.join(dataset_path, "filter_by_keyword", self.keyword + ".json")
-        self.pointcloud_filename_list = load_json(json_file)
+        self.keyword = keyword
+        if not self.keyword:
+            self.pointcloud_filename_list = sorted(os.listdir(self.path_data_pc))
+        else:
+            json_file = os.path.join(dataset_path, "filter_by_keyword", self.keyword + ".json")
+            self.pointcloud_filename_list = load_json(json_file)
 
         self.image_size = image_size
         self.random_flip = random_flip
         self.prob_use_caption = prob_use_caption
 
         self.pil_to_tensor = transforms.PILToTensor()
+
+        self.grounding_type = grounding_type
+        if grounding_type == None:
+            self.source_name = "source"
+            self.target_name = "target"
+        elif grounding_type == "canny":
+            self.source_name = "canny_edge"
+            self.target_name = "image"
+        elif grounding_type == "depth":
+            self.source_name = "depth"
+            self.target_name = "image"
+        elif grounding_type == "hed":
+            self.source_name = "hed_edge"
+            self.target_name = "image"
+        else:
+            raise Exception("Not supported grounding type.")
 
 
     def __len__(self):
@@ -63,6 +81,9 @@ class ULIP_plane(Dataset):
             
         name = self.pointcloud_filename_list[index]
 
+        if name.endswith(".npy"):
+            name = name[:-4]
+        
         pc_np = np.load(os.path.join(self.path_data_pc, name + ".npy"))
         # print("pc_np.shape: ")
         # print(pc_np.shape)
@@ -156,8 +177,8 @@ class ULIP_plane(Dataset):
             # not valid data pair found, return empty template
             return {
                 'id': idx,
-                'image': torch.zeros(3, self.image_size, self.image_size),
-                'canny_edge': torch.zeros(3, self.image_size, self.image_size),
+                self.target_name: torch.zeros(3, self.image_size, self.image_size),
+                self.source_name: torch.zeros(3, self.image_size, self.image_size),
                 'mask': torch.tensor(1.0),
                 'caption': ""
             }
@@ -205,8 +226,8 @@ class ULIP_plane(Dataset):
         # Prepare output
         out = {
             'id': idx,
-            'image': target,
-            'canny_edge': source,
+            self.target_name: target,
+            self.source_name: source,
             'mask': torch.tensor(1.0),
             'caption': caption if random.uniform(0, 1) < self.prob_use_caption else ""
         }
@@ -215,11 +236,15 @@ class ULIP_plane(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = ULIP_plane()
+    keyword = "chair"
+    # keyword = "table"
+    # keyword = None
+
+    dataset = ULIP_ShapeNet(keyword=keyword)
     print(len(dataset))
     print(dataset.total_images())
 
     item = dataset[34]
     print(item['caption'])
-    print(item['image'].shape)
-    print(item['canny_edge'].shape)
+    print(item[dataset.target_name].shape)
+    print(item[dataset.source_name].shape)

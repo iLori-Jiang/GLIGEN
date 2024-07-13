@@ -456,6 +456,10 @@ class Trainer:
 
                 if (iter_idx == 0)  or  ( iter_idx % self.config.save_every_iters == 0 )  or  (iter_idx == self.config.total_iters-1):
                     self.save_ckpt_and_result()
+
+                if not self.config.disable_inference_in_training and ( (iter_idx == 0) or (iter_idx % self.config.inference_in_training_every_iters == 0) ):
+                    self.log_result_in_training()
+
             synchronize()
 
         
@@ -470,64 +474,91 @@ class Trainer:
     
 
     @torch.no_grad()
-    def save_ckpt_and_result(self):
+    def inference_in_training(self):
+        # if not self.config.disable_inference_in_training:
 
         model_wo_wrapper = self.model.module if self.config.distributed else self.model
+            
+        # Do an inference on one training batch 
+        batch_here = self.config.batch_size
+        batch = sub_batch( next(self.loader_train), batch_here)
+        batch_to_device(batch, self.device)
+
+        # create box or key point for pose images for better visualization
+        if "boxes" in batch:
+            real_images_with_box_drawing = [] # we save this durining trianing for better visualization
+            for i in range(batch_here):
+                temp_data = {"image": batch["image"][i], "boxes":batch["boxes"][i]}
+                im = self.dataset_train.datasets[0].vis_getitem_data(out=temp_data, return_tensor=True, print_caption=False)
+                real_images_with_box_drawing.append(im)
+            real_images_with_box_drawing = torch.stack(real_images_with_box_drawing)
+        else:
+            # keypoint case 
+            real_images_with_box_drawing = batch["image"]*0.5 + 0.5 
+            
+        # prepare text
+        uc = self.text_encoder.encode( batch_here*[""] )
+        context = self.text_encoder.encode(  batch["caption"]  )
+        
+        # prepare sampler
+        plms_sampler = PLMSSampler(self.diffusion, model_wo_wrapper)      
+        shape = (batch_here, model_wo_wrapper.in_channels, model_wo_wrapper.image_size, model_wo_wrapper.image_size)
+        
+        # extra input for inpainting 
+        inpainting_extra_input = None
+        if self.config.inpaint_mode:
+            z = self.autoencoder.encode( batch["image"] )
+            inpainting_mask = draw_masks_from_boxes(batch['boxes'], 64, randomize_fg_mask=self.config.randomize_fg_mask, random_add_bg_mask=self.config.random_add_bg_mask).cuda()
+            masked_z = z*inpainting_mask
+            inpainting_extra_input = torch.cat([masked_z,inpainting_mask], dim=1)
+        
+        # prepare grounding input
+        grounding_extra_input = None
+        if self.grounding_downsampler_input != None:
+            grounding_extra_input = self.grounding_downsampler_input.prepare(batch)
+        
+        grounding_input = self.grounding_tokenizer_input.prepare(batch)
+
+        # prepare input for the UNet model
+        input = dict( x=None, 
+                        timesteps=None, 
+                        context=context, 
+                        inpainting_extra_input=inpainting_extra_input,
+                        grounding_extra_input=grounding_extra_input,
+                        grounding_input=grounding_input )
+        
+        # sample result
+        samples = plms_sampler.sample(S=50, shape=shape, input=input, uc=uc, guidance_scale=5)
+        
+        # decode result into pixel space
+        autoencoder_wo_wrapper = self.autoencoder # Note itself is without wrapper since we do not train that. 
+        samples = autoencoder_wo_wrapper.decode(samples).cpu()
+        samples = torch.clamp(samples, min=-1, max=1)
+
+        # result for inpainting task
+        masked_real_image =  batch["image"]*torch.nn.functional.interpolate(inpainting_mask, size=(512, 512)) if self.config.inpaint_mode else None
+
+        return samples, real_images_with_box_drawing, masked_real_image, batch["caption"]
+
+
+    def log_result_in_training(self):
+        
+        iter_name = self.iter_idx + 1     # we add 1 as the actual name
+
+        samples, real_images_with_box_drawing, masked_real_image, captions = self.inference_in_training()
+            
+        self.image_caption_saver(samples, real_images_with_box_drawing,  masked_real_image, captions, iter_name)
+
+
+    @torch.no_grad()
+    def save_ckpt_and_result(self):
+
+        if not self.config.disable_inference_in_training:
+            self.log_result_in_training()
 
         iter_name = self.iter_idx + 1     # we add 1 as the actual name
 
-        if not self.config.disable_inference_in_training:
-            # Do an inference on one training batch 
-            batch_here = self.config.batch_size
-            batch = sub_batch( next(self.loader_train), batch_here)
-            batch_to_device(batch, self.device)
-
-            
-            if "boxes" in batch:
-                real_images_with_box_drawing = [] # we save this durining trianing for better visualization
-                for i in range(batch_here):
-                    temp_data = {"image": batch["image"][i], "boxes":batch["boxes"][i]}
-                    im = self.dataset_train.datasets[0].vis_getitem_data(out=temp_data, return_tensor=True, print_caption=False)
-                    real_images_with_box_drawing.append(im)
-                real_images_with_box_drawing = torch.stack(real_images_with_box_drawing)
-            else:
-                # keypoint case 
-                real_images_with_box_drawing = batch["image"]*0.5 + 0.5 
-                
-            
-            uc = self.text_encoder.encode( batch_here*[""] )
-            context = self.text_encoder.encode(  batch["caption"]  )
-            
-            plms_sampler = PLMSSampler(self.diffusion, model_wo_wrapper)      
-            shape = (batch_here, model_wo_wrapper.in_channels, model_wo_wrapper.image_size, model_wo_wrapper.image_size)
-            
-            # extra input for inpainting 
-            inpainting_extra_input = None
-            if self.config.inpaint_mode:
-                z = self.autoencoder.encode( batch["image"] )
-                inpainting_mask = draw_masks_from_boxes(batch['boxes'], 64, randomize_fg_mask=self.config.randomize_fg_mask, random_add_bg_mask=self.config.random_add_bg_mask).cuda()
-                masked_z = z*inpainting_mask
-                inpainting_extra_input = torch.cat([masked_z,inpainting_mask], dim=1)
-            
-            grounding_extra_input = None
-            if self.grounding_downsampler_input != None:
-                grounding_extra_input = self.grounding_downsampler_input.prepare(batch)
-            
-            grounding_input = self.grounding_tokenizer_input.prepare(batch)
-            input = dict( x=None, 
-                          timesteps=None, 
-                          context=context, 
-                          inpainting_extra_input=inpainting_extra_input,
-                          grounding_extra_input=grounding_extra_input,
-                          grounding_input=grounding_input )
-            samples = plms_sampler.sample(S=50, shape=shape, input=input, uc=uc, guidance_scale=5)
-            
-            autoencoder_wo_wrapper = self.autoencoder # Note itself is without wrapper since we do not train that. 
-            samples = autoencoder_wo_wrapper.decode(samples).cpu()
-            samples = torch.clamp(samples, min=-1, max=1)
-
-            masked_real_image =  batch["image"]*torch.nn.functional.interpolate(inpainting_mask, size=(512, 512)) if self.config.inpaint_mode else None
-            self.image_caption_saver(samples, real_images_with_box_drawing,  masked_real_image, batch["caption"], iter_name)
+        model_wo_wrapper = self.model.module if self.config.distributed else self.model
 
         ckpt = dict(model = model_wo_wrapper.state_dict(),
                     text_encoder = self.text_encoder.state_dict(),

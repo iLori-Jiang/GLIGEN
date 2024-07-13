@@ -27,14 +27,13 @@ model:
 
     # JHY: NOTE: need to modify
     grounding_downsampler:
-      target: ldm.modules.diffusionmodules.canny_grounding_downsampler.GroundingDownsampler
+      target: ldm.modules.diffusionmodules.hed_grounding_downsampler.GroundingDownsampler
       params:
-        resize_input: 256
-        out_dim: 8 
+        out_dim: 1
 
     # JHY: NOTE: need to modify
     grounding_tokenizer:
-      target: ldm.modules.diffusionmodules.canny_grounding_net.PositionNet
+      target: ldm.modules.diffusionmodules.hed_grounding_net.PositionNet
       params:
         resize_input: 256
         out_dim: 768 
@@ -69,7 +68,7 @@ text_encoder:
 
 # JHY: NOTE: need to modify
 train_dataset_names: 
-  ULIP2PlaneCanny:   # mainly this
+  ULIP2ChairHED:   # mainly this
     prob_use_caption: 1
     image_size: 512
     random_flip: True
@@ -77,9 +76,8 @@ train_dataset_names:
 
 # JHY: NOTE: need to modify
 grounding_tokenizer_input:
-  target: grounding_input.canny_grounding_tokinzer_input.GroundingNetInput
-
+  target: grounding_input.hed_grounding_tokinzer_input.GroundingNetInput
 
 # JHY: NOTE: need to modify
 grounding_downsampler_input:
-  target: grounding_input.canny_grounding_downsampler_input.GroundingDSInput
+  target: grounding_input.hed_grounding_downsampler_input.GroundingDSInput

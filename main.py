@@ -46,6 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--total_iters", type=int,  default=500000, help="")
     parser.add_argument("--save_every_iters", type=int,  default=5000, help="")
     parser.add_argument("--disable_inference_in_training", type=lambda x:x.lower() == "true",  default=False, help="Do not do inference, thus it is faster to run first a few iters. It may be useful for debugging ")
+    parser.add_argument("--inference_in_training_every_iters", type=int, default=2500, help="If not disable inference in training, do the inference every [] iters")
 
 
     args = parser.parse_args()
@@ -85,7 +86,10 @@ if __name__ == "__main__":
     # CUDA_VISIBLE_DEVICES=0 python main.py --name=gligen_toy_data --yaml_file=configs/toy_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=1000 --disable_inference_in_training=False
 
     # ULIP plan dataset using canny grounding approach
-    # CUDA_VISIBLE_DEVICES=0 python main.py --name=ulip_plane_canny --yaml_file=configs/ULIP_plane_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=1000 --warmup_steps=1000 --disable_inference_in_training=False
+    # CUDA_VISIBLE_DEVICES=0 python main.py --name=ulip_plane_canny --yaml_file=configs/ULIP_plane_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=5000 --warmup_steps=1000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
+
+    # ULIP chair dataset using HED grounding approach
+    # CUDA_VISIBLE_DEVICES=1 python main.py --name=ulip_chair_hed --yaml_file=configs/ULIP_chair_hed.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=5000 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
 
 
 

@@ -42,6 +42,15 @@ class ConCatDataset():
         self.which_dataset = torch.cat(which_dataset, dim=0).long()
 
 
+        # JHY: NOTE: add attribute for saving grounding images
+        grounding_type = params.get('grounding_type')
+        if grounding_type is not None:
+            print(f"Grounding type is: {grounding_type}")
+            self.grounding_type = grounding_type
+        else:
+            self.grounding_type = None
+
+
     def total_images(self):
         count = 0
         for dataset in self.datasets:

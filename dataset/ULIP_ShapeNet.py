@@ -236,8 +236,9 @@ class ULIP_ShapeNet(Dataset):
 
 
 if __name__ == "__main__":
-    keyword = "chair"
+    # keyword = "chair"
     # keyword = "table"
+    keyword = "plane"
     # keyword = None
 
     dataset = ULIP_ShapeNet(keyword=keyword)

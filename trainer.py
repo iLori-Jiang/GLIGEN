@@ -41,13 +41,17 @@ class ImageCaptionSaver:
         self.scale_each = scale_each
         self.range = range
 
-    def __call__(self, images, real, masked_real, captions, seen):
+    def __call__(self, images, grounding_images, real, masked_real, captions, seen):
         
         save_path = os.path.join(self.base_path, str(seen).zfill(8)+'.png')
         torchvision.utils.save_image( images, save_path, nrow=self.nrow, normalize=self.normalize, scale_each=self.scale_each, range=self.range )
         
         save_path = os.path.join(self.base_path, str(seen).zfill(8)+'_real.png')
         torchvision.utils.save_image( real, save_path, nrow=self.nrow)
+
+        if grounding_images is not None:
+            save_path = os.path.join(self.base_path, str(seen).zfill(8)+'_source.png')
+            torchvision.utils.save_image( grounding_images, save_path, nrow=self.nrow)
 
         if masked_real is not None:
             # only inpaiting mode case 
@@ -316,6 +320,23 @@ class Trainer:
             print("")
         
 
+        # JHY: NOTE: add attribute for save grounding images
+        self.grounding_type = dataset_train.grounding_type
+
+        # copy from dataset/ULIP_ShapeNet.py
+        if self.grounding_type == "canny":
+            self.source_name = "canny_edge"
+            self.target_name = "image"
+        elif self.grounding_type == "depth":
+            self.source_name = "depth"
+            self.target_name = "image"
+        elif self.grounding_type == "hed":
+            self.source_name = "hed_edge"
+            self.target_name = "image"
+        else:
+            self.source_name = "source"
+            self.target_name = "image"
+
 
 
         # = = = = = = = = = = = = = = = = = = = = load from autoresuming ckpt = = = = = = = = = = = = = = = = = = = = #
@@ -473,6 +494,9 @@ class Trainer:
             self.writer.add_scalar(  k, v, self.iter_idx+1  )  # we add 1 as the actual name
     
 
+    '''
+    JHY: NOTE: do the inference during the training, log result
+    '''
     @torch.no_grad()
     def inference_in_training(self):
         # if not self.config.disable_inference_in_training:
@@ -494,7 +518,14 @@ class Trainer:
             real_images_with_box_drawing = torch.stack(real_images_with_box_drawing)
         else:
             # keypoint case 
+            # and else cases
             real_images_with_box_drawing = batch["image"]*0.5 + 0.5 
+
+        # JHY: NOTE: store source images, only when using my custom dataset
+        if self.grounding_type is not None:
+            grounding_images = batch[self.source_name]*0.5 + 0.5 
+        else:
+            grounding_images = None
             
         # prepare text
         uc = self.text_encoder.encode( batch_here*[""] )
@@ -538,16 +569,20 @@ class Trainer:
         # result for inpainting task
         masked_real_image =  batch["image"]*torch.nn.functional.interpolate(inpainting_mask, size=(512, 512)) if self.config.inpaint_mode else None
 
-        return samples, real_images_with_box_drawing, masked_real_image, batch["caption"]
+        # JHY: NOTE: sample result, grounding source, real target, masked real target for inpainting, caption
+        return samples, grounding_images, real_images_with_box_drawing, masked_real_image, batch["caption"]
 
 
+    '''
+    JHY: NOTE: log the inference result during training
+    '''
     def log_result_in_training(self):
         
         iter_name = self.iter_idx + 1     # we add 1 as the actual name
 
-        samples, real_images_with_box_drawing, masked_real_image, captions = self.inference_in_training()
+        samples, grounding_images, real_images_with_box_drawing, masked_real_image, captions = self.inference_in_training()
             
-        self.image_caption_saver(samples, real_images_with_box_drawing,  masked_real_image, captions, iter_name)
+        self.image_caption_saver(images=samples, grounding_images=grounding_images, real=real_images_with_box_drawing,  masked_real=masked_real_image, captions=captions, seen=iter_name)
 
 
     @torch.no_grad()

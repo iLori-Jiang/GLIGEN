@@ -180,7 +180,8 @@ class ULIP_ShapeNet(Dataset):
                 self.target_name: torch.zeros(3, self.image_size, self.image_size),
                 self.source_name: torch.zeros(3, self.image_size, self.image_size),
                 'mask': torch.tensor(1.0),
-                'caption': ""
+                'caption': "",
+                'rotation': torch.tensor(0),      # version 2: encode the rotation information
             }
 
 
@@ -202,8 +203,12 @@ class ULIP_ShapeNet(Dataset):
         # prompt guidance
         caption_idx = np.random.randint(len(data[f"angle_{index_target}"]["captions"]))
         caption = data[f"angle_{index_target}"]["captions"][caption_idx]
-        caption = f"Image of a 3D rendering object, {caption}, with {rotation} degree rotating based on the reference image."
 
+        # version 1: rotation is included in the caption 
+        # caption = f"Image of a 3D rendering object, {caption}, with {rotation} degree rotating based on the reference image."
+
+        # version 2: separately encode rotation
+        caption = f"Image of a 3D rendering object, {caption}"
 
         # Apply center crop, resize, and random flip
         assert  source.size == target.size
@@ -229,7 +234,8 @@ class ULIP_ShapeNet(Dataset):
             self.target_name: target,
             self.source_name: source,
             'mask': torch.tensor(1.0),
-            'caption': caption if random.uniform(0, 1) < self.prob_use_caption else ""
+            'caption': caption if random.uniform(0, 1) < self.prob_use_caption else "",
+            'rotation': torch.tensor(rotation),       # NOTE: rotation is in 360 degree
         }
 
         return out

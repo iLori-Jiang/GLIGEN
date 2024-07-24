@@ -85,11 +85,18 @@ if __name__ == "__main__":
     # toy dataset using canny grounding approach
     # CUDA_VISIBLE_DEVICES=0 python main.py --name=gligen_toy_data --yaml_file=configs/toy_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=1000 --disable_inference_in_training=False
 
+    # --- Version 1
+
     # ULIP plan dataset using canny grounding approach
     # CUDA_VISIBLE_DEVICES=0 python main.py --name=ulip_plane_canny --yaml_file=configs/ULIP_plane_canny.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=5000 --warmup_steps=1000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
 
     # ULIP chair dataset using HED grounding approach
     # CUDA_VISIBLE_DEVICES=1 python main.py --name=ulip_chair_hed --yaml_file=configs/ULIP_chair_hed.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=5000 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
+
+    # --- Version 2
+
+    # ULIP plan dataset using canny grounding + rotation approach
+    # CUDA_VISIBLE_DEVICES=2 python main.py --name=ulip_plane_canny_rotation --yaml_file=configs/ULIP_plane_canny_rotation.yaml --batch_size=6 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=5000 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
 
 
 

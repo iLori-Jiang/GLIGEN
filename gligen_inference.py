@@ -729,16 +729,30 @@ if __name__ == "__main__":
 
 
         # - - - - - - - - GLIGEN on toy dataset for generation - - - - - - - - #
+        # dict(
+        #     ckpt ="./OUTPUT/gligen_toy_data/tag01/checkpoint_latest.pth",
+        #     type = "canny",
+        #     # canny_image = 'inference_images/canny_robot.png',
+        #     # prompt = "A humanoid robot in red designed for companionship, in a yellow background",
+        #     canny_image = 'inference_images/toy_8.png',
+        #     prompt = "yellow circle on a green background",
+        #     negative_prompt = args.negative_prompt + "", 
+        #     alpha_type = [0.9, 0, 0.1], 
+        #     save_folder_name="toy_data"
+        # ),
+
+        # - - - - - - - - GLIGEN on toy dataset for generation - - - - - - - - #
         dict(
-            ckpt ="./OUTPUT/gligen_toy_data/tag01/checkpoint_latest.pth",
+            ckpt ="./OUTPUT/ulip_plane_canny_FIN/tag02/checkpoint_00260001.pth",
             type = "canny",
-            # canny_image = 'inference_images/canny_robot.png',
-            # prompt = "A humanoid robot in red designed for companionship, in a yellow background",
-            canny_image = 'inference_images/toy_8.png',
-            prompt = "yellow circle on a green background",
-            negative_prompt = args.negative_prompt + "", 
+            canny_image = '/home/haiyang/1_Downloads/ULIP_selected_images/plane_6.png',
+            # canny_image = '/home/haiyang/1_Downloads/ULIP_selected_images/plane_9.jpg',
+            # canny_image = './generation_samples/ulip_plane_canny/2.png',
+            prompt = "Image of a 3D rendering airplane, with 48 degree rotating based on the reference image.",
+            # negative_prompt = args.negative_prompt + "", 
+            negative_prompt = "", 
             alpha_type = [0.9, 0, 0.1], 
-            save_folder_name="toy_data"
+            save_folder_name="ulip_plane_canny"
         ),
 
     ]

@@ -21,6 +21,15 @@ class DatasetCatalog:
         }
 
         # JHY: NOTE: add ULIP chair dataset
+        self.ULIP2ChairCanny = {
+            "target": "dataset.ULIP_ShapeNet.ULIP_ShapeNet",
+            "train_params":dict(
+                keyword="chair", 
+                grounding_type="canny",
+            ),
+        }
+
+        # JHY: NOTE: add ULIP chair dataset
         self.ULIP2ChairHED = {
             "target": "dataset.ULIP_ShapeNet.ULIP_ShapeNet",
             "train_params":dict(

@@ -69,6 +69,19 @@ class PLMSSampler(object):
         
         img = input["x"]
         if img == None:     
+
+            # JHY: NOTE: problem that the sample batch size is not equal to the batch size in config
+            real_batch_shape = input["context"].shape
+            if real_batch_shape[0] < shape[0]:
+                print("    !!! next batch size is smaller than config batch size")
+                shape[0] = real_batch_shape[0]
+            elif real_batch_shape[0] > shape[0]:
+                print("    !!! next batch size is bigger than config batch size, THIS IS WEIRD AND SHOULD NOT HAPPEN")
+                shape[0] = real_batch_shape[0]
+            else:
+                # real_batch_shape[0] == shape[0]
+                pass
+
             img = torch.randn(shape, device=self.device)
             input["x"] = img
 

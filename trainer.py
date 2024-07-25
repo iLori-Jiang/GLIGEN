@@ -588,8 +588,7 @@ class Trainer:
     @torch.no_grad()
     def save_ckpt_and_result(self):
 
-        if not self.config.disable_inference_in_training:
-            self.log_result_in_training()
+        # save checkpoint first
 
         iter_name = self.iter_idx + 1     # we add 1 as the actual name
 
@@ -608,5 +607,9 @@ class Trainer:
             ckpt["ema"] = self.ema.state_dict()
         torch.save( ckpt, os.path.join(self.name, "checkpoint_"+str(iter_name).zfill(8)+".pth") )
         torch.save( ckpt, os.path.join(self.name, "checkpoint_latest.pth") )
+
+        # log result
+        if not self.config.disable_inference_in_training:
+            self.log_result_in_training()
 
 

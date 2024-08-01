@@ -11,6 +11,8 @@ class DatasetCatalog:
             ),
         }
 
+        # ------------------ version 1
+
         # JHY: NOTE: add ULIP plane dataset
         self.ULIP2PlaneCanny = {
             "target": "dataset.ULIP_ShapeNet.ULIP_ShapeNet",
@@ -35,6 +37,16 @@ class DatasetCatalog:
             "train_params":dict(
                 keyword="chair", 
                 grounding_type="hed",
+            ),
+        }
+
+        # ------------------ version 2
+
+        # JHY: NOTE: version 2, integrate
+        self.ULIP2ShapeNet = {
+            "target": "dataset.ULIP_ShapeNet.ULIP_ShapeNet",
+            "train_params":dict(
+                
             ),
         }
 

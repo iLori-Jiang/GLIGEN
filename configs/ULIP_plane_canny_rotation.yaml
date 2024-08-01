@@ -69,10 +69,11 @@ text_encoder:
 
 # JHY: NOTE: need to modify
 train_dataset_names: 
-  ULIP2PlaneCanny:   # mainly this
-    prob_use_caption: 1
+  ULIP2ShapeNet:   # mainly this
+    prob_use_caption: 0.6
     image_size: 512
-    random_flip: True
+    keyword: "plane"
+    grounding_type: "canny"
 
 
 # JHY: NOTE: need to modify

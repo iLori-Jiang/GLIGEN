@@ -208,7 +208,10 @@ class ULIP_ShapeNet(Dataset):
         # caption = f"Image of a 3D rendering object, {caption}, with {rotation} degree rotating based on the reference image."
 
         # version 2: separately encode rotation
-        caption = f"Image of a 3D rendering object, {caption}"
+        if random.uniform(0, 1) < self.prob_use_caption:
+            caption = f"Image of a 3D rendering object, {caption}"
+        else:
+            caption = f"Image of a 3D rendering object"
 
         # Apply center crop, resize, and random flip
         assert  source.size == target.size
@@ -220,9 +223,10 @@ class ULIP_ShapeNet(Dataset):
         target = TF.center_crop(target, crop_size)
         target = target.resize((self.image_size, self.image_size))
 
-        if self.random_flip and random.random() < 0.5:
-            source = ImageOps.mirror(source)
-            target = ImageOps.mirror(target)
+        # NOTE: since we need rotation info, no random flip allowed
+        # if self.random_flip and random.random() < 0.5:
+        #     source = ImageOps.mirror(source)
+        #     target = ImageOps.mirror(target)
 
         # Normalize images
         source = (self.pil_to_tensor(source).float() / 255.0 - 0.5) / 0.5
@@ -234,7 +238,7 @@ class ULIP_ShapeNet(Dataset):
             self.target_name: target,
             self.source_name: source,
             'mask': torch.tensor(1.0),
-            'caption': caption if random.uniform(0, 1) < self.prob_use_caption else "",
+            'caption': caption,
             'rotation': torch.tensor(rotation),       # NOTE: rotation is in 360 degree
         }
 

@@ -27,12 +27,13 @@ def create_image_grid(images):
 
 
 class ULIP_ShapeNet(Dataset):
-    def __init__(self, dataset_path=DATASET_ADDRESS, keyword=None, grounding_type=None, sample_angle_range=60, image_size=512, random_flip=False, prob_use_caption=1):
+    def __init__(self, dataset_path=DATASET_ADDRESS, keyword=None, grounding_type=None, sample_angle_range=60, image_size=512, pointcloud_embedding_size=1280, random_flip=False, prob_use_caption=1):
         self.dataset_path = dataset_path
 
         self.path_caption_data = os.path.join(dataset_path, 'captions')
         self.path_data_pc = os.path.join(dataset_path, "shapenet_pc")
         self.path_data_rgb = os.path.join(dataset_path, "only_rgb_depth_images")
+        self.path_pc_embeddings = os.path.join(dataset_path, "ulip_pc_embeddings")
 
         self.all_angles = np.arange(0, 360, 12)
         self.sample_angle_range = sample_angle_range
@@ -45,6 +46,7 @@ class ULIP_ShapeNet(Dataset):
             self.pointcloud_filename_list = load_json(json_file)
 
         self.image_size = image_size
+        self.pointcloud_embedding_size = pointcloud_embedding_size
         self.random_flip = random_flip
         self.prob_use_caption = prob_use_caption
 
@@ -84,12 +86,19 @@ class ULIP_ShapeNet(Dataset):
         if name.endswith(".npy"):
             name = name[:-4]
         
+        # pointcloud numpy
         pc_np = np.load(os.path.join(self.path_data_pc, name + ".npy"))
         # print("pc_np.shape: ")
         # print(pc_np.shape)
-        
+
         data = {'pointcloud_np': pc_np}
+
+        # pointcloud embedding tensor
+        pc_embedding_tensor = torch.load(os.path.join(self.path_pc_embeddings, name + ".pt"))
+
+        data['pointcloud_embedding_tensor'] = pc_embedding_tensor   # torch.Size([1, 1280])
         
+        # captions data
         captions_data = load_json(os.path.join(self.path_caption_data, name + ".json"))
         
         caption_missing = 0
@@ -177,6 +186,7 @@ class ULIP_ShapeNet(Dataset):
             # not valid data pair found, return empty template
             return {
                 'id': idx,
+                'pointcloud_embedding_tensor': torch.zeros(self.pointcloud_embedding_size),
                 self.target_name: torch.zeros(3, self.image_size, self.image_size),
                 self.source_name: torch.zeros(3, self.image_size, self.image_size),
                 'mask': torch.tensor(1.0),
@@ -232,9 +242,14 @@ class ULIP_ShapeNet(Dataset):
         source = (self.pil_to_tensor(source).float() / 255.0 - 0.5) / 0.5
         target = (self.pil_to_tensor(target).float() / 255.0 - 0.5) / 0.5
 
+        # Normalize point cloud embeddings
+        pc_embedding_tensor = data['pointcloud_embedding_tensor']
+        pc_embedding_tensor = pc_embedding_tensor / pc_embedding_tensor.norm(dim=-1, keepdim=True)
+
         # Prepare output
         out = {
             'id': idx,
+            'pointcloud_embedding_tensor': pc_embedding_tensor,
             self.target_name: target,
             self.source_name: source,
             'mask': torch.tensor(1.0),

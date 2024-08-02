@@ -244,7 +244,12 @@ class ULIP_ShapeNet(Dataset):
 
         # Normalize point cloud embeddings
         pc_embedding_tensor = data['pointcloud_embedding_tensor']
-        pc_embedding_tensor = pc_embedding_tensor / pc_embedding_tensor.norm(dim=-1, keepdim=True)
+
+        '''
+        NOTE: shoudn't normalize, this will destory some information, 
+        can use layer norm to let the network do it itself
+        '''
+        # pc_embedding_tensor = pc_embedding_tensor / pc_embedding_tensor.norm(dim=-1, keepdim=True)
 
         # Prepare output
         out = {

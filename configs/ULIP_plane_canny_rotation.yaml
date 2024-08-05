@@ -27,10 +27,11 @@ model:
 
     # JHY: NOTE: need to modify
     grounding_downsampler:
-      target: ldm.modules.diffusionmodules.canny_grounding_downsampler.GroundingDownsampler
+      target: ldm.modules.diffusionmodules.canny_rgb_grounding_downsampler.GroundingDownsampler
       params:
         resize_input: 256
         out_dim: 8 
+        hidden_dim: 4
 
     # JHY: NOTE: need to modify
     grounding_tokenizer:

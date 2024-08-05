@@ -233,7 +233,7 @@ class ResBlock(TimestepBlock):
 
 
 
-
+# JHY: NOTE: U Net model
 class UNetModel(nn.Module):
     def __init__(
         self,
@@ -433,7 +433,7 @@ class UNetModel(nn.Module):
 
         # Grounding tokens: B*N*C
         # JHY: NOTE: from grounding to tokens
-        # {Batch * Num_Of_Token* Token_Channel_Dimension}
+        # {Batch * Num_Of_Token * Token_Channel_Dimension}
         objs = self.position_net( **grounding_input )  
         
         # Time embedding 
@@ -487,18 +487,22 @@ class UNetModel(nn.Module):
 
         # Start forwarding 
         hs = []
+
+        # JHY: NOTE: input blocks: downsample blocks
         for module in self.input_blocks:
-            # JHY: NOTE: (latent of image, time embed, prompt, grounding tokens)
+            # (latent of image, time embed, prompt, grounding tokens)
             h = module(h, emb, context, objs)
             hs.append(h)
 
-        # JHY: NOTE: (latent of image, time embed, prompt, grounding tokens)
+        # JHY: NOTE: bottle neck blocks
+        # (latent of image, time embed, prompt, grounding tokens)
         h = self.middle_block(h, emb, context, objs)
 
+        # JHY: NOTE: output blocks: upsample blocks
         for module in self.output_blocks:
-            # JHY: NOTE: jump connection, concate the latent image at same resolution
+            # jump connection, concate the latent image at same resolution
             h = th.cat([h, hs.pop()], dim=1)
-            # JHY: NOTE: (latent of image, time embed, prompt, grounding tokens)
+            # (latent of image, time embed, prompt, grounding tokens)
             h = module(h, emb, context, objs)
 
         return self.out(h)

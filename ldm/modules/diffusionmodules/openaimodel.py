@@ -440,7 +440,7 @@ class UNetModel(nn.Module):
         t_emb = timestep_embedding(input["timesteps"], self.model_channels, repeat_only=False)
         emb = self.time_embed(t_emb)
 
-        # JHY: NOTE: dimension is for HED grounding
+        # JHY: NOTE: dimension tested on HED grounding
         # input tensor  
         h = input["x"]
 
@@ -455,7 +455,7 @@ class UNetModel(nn.Module):
         '''
 
         # JHY: NOTE: first conv section
-        # JHY: NOTE: dimension is for HED grounding
+        # JHY: NOTE: dimension is tested on HED grounding
 
         # Attach the first conv to the original input
         if self.downsample_net != None and self.first_conv_type=="GLIGEN":

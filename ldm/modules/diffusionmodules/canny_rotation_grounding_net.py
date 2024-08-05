@@ -83,6 +83,8 @@ class PositionNet(nn.Module):
         and here C = convnext_feature_dim
         '''
         objs = canny_edge_feature.reshape(B, -1, self.num_tokens)
+
+        # (B, C, H*W) -> (B, H*W (num_tokens), C (token_dim))
         objs = objs.permute(0, 2, 1) # N * Num_tokens * token_dim
 
         # --- Inpainting process

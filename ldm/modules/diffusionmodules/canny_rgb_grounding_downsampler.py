@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+# JHY: NOTE: version 3, accept RGB 3 channels instead of 1 gray channel
 
 class GroundingDownsampler(nn.Module):
     def __init__(self, resize_input=256, out_dim=8, hidden_dim=4):

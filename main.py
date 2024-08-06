@@ -101,6 +101,14 @@ if __name__ == "__main__":
     # ULIP chair dataset using canny grounding + rotation approach
     # CUDA_VISIBLE_DEVICES=1 python main.py --name=ulip_chair_canny_rotation --yaml_file=configs/ULIP_chair_canny_rotation.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=2500 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
 
+    # --- Version 3
+
+    # ULIP plan dataset using canny grounding + rotation + 3d approach
+    # CUDA_VISIBLE_DEVICES=2 python main.py --name=ulip_plane_canny_rotation_3d --yaml_file=configs/ULIP_plane_canny_rotation_3d.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=2500 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
+
+    # ULIP chair dataset using canny grounding + rotation + 3d approach
+    # CUDA_VISIBLE_DEVICES=1 python main.py --name=ulip_chair_canny_rotation_3d --yaml_file=configs/ULIP_chair_canny_rotation_3d.yaml --batch_size=4 --accumulate_grad_batches=4 --total_iters=500000 --save_every_iters=2500 --warmup_steps=2000 --disable_inference_in_training=False --inference_in_training_every_iters 1000
+
 
 
 

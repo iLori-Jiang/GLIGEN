@@ -48,8 +48,12 @@ class PositionNet(nn.Module):
         self.null_feature = torch.nn.Parameter(torch.zeros([convnext_feature_dim]))
 
         # JHY: NOTE: version 2, process rotation info
-        self.fc_rotation = nn.Linear(convnext_feature_dim + 2, convnext_feature_dim)
-
+        self.fc_rotation = nn.Sequential(
+                                nn.Linear(convnext_feature_dim + 2, 1024),
+                                nn.SiLU(),
+                                nn.Linear(1024, convnext_feature_dim)
+                            )
+        
         # JHY: NOTE: version 3, process point cloud
         self.pointcloud_encoder = pointcloud_encoder
         if pointcloud_encoder == "ULIP2_pointbert_embedding":
@@ -60,6 +64,10 @@ class PositionNet(nn.Module):
 
             self.fc_pointcloud = nn.Linear(self.pc_dim, convnext_feature_dim)
 
+            # JHY: NOTE: since the original embeddings are not normalized, use layer norm to normalize
+            self.pointcloud_layer_norm = nn.LayerNorm(self.pc_dim)
+            self.if_pc_layer_norm = True
+
             # For Transformers
             self.pos_embedding = nn.Parameter(
                                     torch.empty(
@@ -69,6 +77,8 @@ class PositionNet(nn.Module):
                                         ).normal_(std=0.02)
                                     )  # from BERT
         else:
+            self.if_pc_layer_norm = False
+
             # For Transformers
             self.pos_embedding = nn.Parameter(
                                     torch.empty(
@@ -79,7 +89,7 @@ class PositionNet(nn.Module):
                                     )  # from BERT
 
 
-    def forward(self, canny_edge, mask, rotation, pointcloud_tokens=None):
+    def forward(self, canny_edge, mask, rotation, pointcloud_tokens):
         B = canny_edge.shape[0] 
 
         # --- Encode the image features
@@ -122,9 +132,7 @@ class PositionNet(nn.Module):
 
         # Encode the rotation angle
         theta = torch.deg2rad(rotation)
-
         theta_encoded = torch.stack([torch.sin(theta), torch.cos(theta)], dim=-1)
-
         theta_encoded = theta_encoded.unsqueeze(1).expand(-1, self.num_tokens, -1)
 
         # Concatenate rotation information with image features
@@ -134,6 +142,10 @@ class PositionNet(nn.Module):
         combined_features = self.fc_rotation(combined_features)
 
         # --- JHY: NOTE: version 3, add pointcloud info
+
+        # do the layer norm first if the tokens/embeddings are not normalized yet
+        if self.if_pc_layer_norm:
+            pointcloud_tokens = self.pointcloud_layer_norm(pointcloud_tokens)
 
         # project to the dim of img tokens
         # [B, D_pc] -> [B, D]
@@ -171,6 +183,6 @@ if __name__ == "__main__":
     output = model(example_img, mask, rotation, example_pc_embedding)
 
     # 打印输出尺寸
-    print("输出尺寸:", output.shape)
+    print("输出尺寸:", output.shape)    # torch.Size([4, 196 + 1, 768])
 
     # run by: python -m ldm.modules.diffusionmodules.canny_rotation_3d_grounding_net

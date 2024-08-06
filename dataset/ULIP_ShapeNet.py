@@ -27,7 +27,7 @@ def create_image_grid(images):
 
 
 class ULIP_ShapeNet(Dataset):
-    def __init__(self, dataset_path=DATASET_ADDRESS, keyword=None, grounding_type=None, sample_angle_range=60, image_size=512, pointcloud_embedding_size=1280, random_flip=False, prob_use_caption=1):
+    def __init__(self, dataset_path=DATASET_ADDRESS, keyword=None, grounding_type=None, sample_angle_range=60, image_size=512, pointcloud_encoder=None, random_flip=False, prob_use_caption=1, prob_use_3d_info=0.9):
         self.dataset_path = dataset_path
 
         self.path_caption_data = os.path.join(dataset_path, 'captions')
@@ -46,10 +46,17 @@ class ULIP_ShapeNet(Dataset):
             self.pointcloud_filename_list = load_json(json_file)
 
         self.image_size = image_size
-        self.pointcloud_embedding_size = pointcloud_embedding_size
         self.random_flip = random_flip
         self.prob_use_caption = prob_use_caption
 
+        self.prob_use_3d_info = prob_use_3d_info
+        self.pointcloud_encoder = pointcloud_encoder
+        # NOTE: In the CLIP related model, the embedding cannot be fully zero, otherwise cannot compute cosine similarity
+        # So we choose fully zero vector to be the null case
+        if self.pointcloud_encoder == "ULIP2_pointbert_embedding":
+            # self.pointcloud_embedding_size = [1280]
+            self.null_pc_embedding = torch.zeros(1280)
+        
         self.pil_to_tensor = transforms.PILToTensor()
 
         self.grounding_type = grounding_type
@@ -186,7 +193,7 @@ class ULIP_ShapeNet(Dataset):
             # not valid data pair found, return empty template
             return {
                 'id': idx,
-                'pointcloud_embedding_tensor': torch.zeros(self.pointcloud_embedding_size),
+                'pointcloud_embedding_tensor': self.null_pc_embedding,
                 self.target_name: torch.zeros(3, self.image_size, self.image_size),
                 self.source_name: torch.zeros(3, self.image_size, self.image_size),
                 'mask': torch.tensor(1.0),
@@ -250,6 +257,13 @@ class ULIP_ShapeNet(Dataset):
         can use layer norm to let the network do it itself
         '''
         # pc_embedding_tensor = pc_embedding_tensor / pc_embedding_tensor.norm(dim=-1, keepdim=True)
+
+        # version 3: add 3d info
+        # random drop some point cloud info
+        if random.uniform(0, 1) < self.prob_use_3d_info:
+            pass
+        else:
+            pc_embedding_tensor = self.null_pc_embedding
 
         # Prepare output
         out = {

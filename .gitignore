@@ -95,3 +95,5 @@ lib/nms/cpu_nms.c
 OUTPUT
 wandb
 *ckpt
+
+wenjian

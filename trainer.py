@@ -188,7 +188,8 @@ class Trainer:
                     friendly_config[key] = str(value)  # 将无法序列化的项转换为字符串
             return friendly_config
 
-        wandb.init(project=config.name, config=json_friendly_config(config))
+        if config.if_wandb_log:
+            wandb.init(project=config.name, config=json_friendly_config(config))
     
         # ===================================================
 
@@ -486,6 +487,26 @@ class Trainer:
         
         synchronize()
         print("Training finished. Start exiting")
+        exit()
+
+
+    def start_validating(self):
+
+        print("!!!!!!!!!!!!!Start Validating!!!!!!!!!!!!!!!!!!!!")
+
+        iterator = tqdm(range(self.starting_iter, self.config.total_iters), desc='Validating progress',  disable=get_rank() != 0 )
+        self.model.eval()
+
+
+        for iter_idx in iterator:
+            self.iter_idx = iter_idx
+
+            self.log_result_in_training()
+
+            synchronize()
+        
+        synchronize()
+        print("Validate finished. Start exiting")
         exit()
 
 

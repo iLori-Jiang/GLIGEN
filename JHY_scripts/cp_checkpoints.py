@@ -75,15 +75,25 @@ if __name__ == "__main__":
 
     # ------------------------------ulip_chair_canny_rotation_3d
 
-    source_directory = "/home/haiyang/1_Repo/GLIGEN/OUTPUT/ulip_chair_canny_rotation_3d/tag02"
-    backup_pth_directory = "/mnt/disk2/iLori/GLIGEN/ulip_chair_canny_rotation_3d/tag02/checkpoint/"
-    backup_png_directory = "/mnt/disk2/iLori/GLIGEN/ulip_chair_canny_rotation_3d/tag02/samples/"
+    # source_directory = "/home/haiyang/1_Repo/GLIGEN/OUTPUT/ulip_chair_canny_rotation_3d/tag02"
+    # backup_pth_directory = "/mnt/disk2/iLori/GLIGEN/ulip_chair_canny_rotation_3d/tag02/checkpoint/"
+    # backup_png_directory = "/mnt/disk2/iLori/GLIGEN/ulip_chair_canny_rotation_3d/tag02/samples/"
 
     # ------------------------------ulip_plane_canny_rotation_3d
 
     # source_directory = "/home/haiyang/1_Repo/GLIGEN/OUTPUT/ulip_plane_canny_rotation_3d/tag02"
     # backup_pth_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane_canny_rotation_3d/tag02/checkpoint/"
     # backup_png_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane_canny_rotation_3d/tag02/samples/"
+
+    # ------------------------------ulip_plane2chair_rotation_3d
+
+    # source_directory = "/home/haiyang/1_Repo/GLIGEN/OUTPUT/ulip_plane2chair_rotation_3d/tag01"
+    # backup_pth_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane2chair_rotation_3d/tag01/checkpoint/"
+    # backup_png_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane2chair_rotation_3d/tag01/samples/"
+
+    source_directory = "/home/haiyang/1_Repo/GLIGEN/OUTPUT/ulip_plane2chair_validate/tag01"
+    backup_pth_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane2chair_validate/tag01/checkpoint/"
+    backup_png_directory = "/mnt/disk2/iLori/GLIGEN/ulip_plane2chair_validate/tag01/samples/"
 
     # 备份 .pth 文件
     backup_pth_files(source_directory, backup_pth_directory)
